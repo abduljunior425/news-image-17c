@@ -34,6 +34,13 @@ const height = bytes.readUInt32BE(20);
 if (width > MAX_SIDE || height > MAX_SIDE || width === 0 || height === 0) {
   throw new Error(`entry.png is ${width}x${height}, over the 1024x1024 cap`);
 }
+// IHDR bit depth (offset 24) and color type (offset 25) must be a sane pair.
+const bitDepth = bytes[24];
+const colorType = bytes[25];
+const allowedDepths = { 0: [1, 2, 4, 8, 16], 2: [8, 16], 3: [1, 2, 4, 8], 4: [8, 16], 6: [8, 16] }[colorType];
+if (allowedDepths === undefined || !allowedDepths.includes(bitDepth)) {
+  throw new Error(`entry.png has unsupported IHDR bit depth ${bitDepth} for color type ${colorType}`);
+}
 
 const digest = createHash("sha256").update(bytes).digest("hex");
 mkdirSync(outDir, { recursive: true });
